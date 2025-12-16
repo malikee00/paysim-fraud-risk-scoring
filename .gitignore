@@ -1,0 +1,47 @@
+# =========================
+# IMPORTANT: Data
+# =========================
+
+# Ignore all raw & processed data by default
+data/raw/*
+data/processed/*
+
+# Allow small committed samples + docs
+!data/raw/sample_raw.csv
+!data/raw/sample_meta.json
+!data/README.md
+
+# =========================
+# Python virtual env
+# =========================
+.venv/
+venv/
+
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.py[cod]
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+
+
+# Large files / archives
+*.zip
+archive.zip
