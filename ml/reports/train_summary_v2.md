@@ -38,5 +38,5 @@
 | True 1 | 1,549 | 2,187 |
 
 ## Engineering
-- Training runtime: 6.23 sec
+- Training runtime: 4.17 sec
 - Model size: 63.30 KB

@@ -55,7 +55,7 @@
     }
   },
   "engineering": {
-    "runtime_sec": 6.228127099981066,
+    "runtime_sec": 4.1705900999950245,
     "model_size_bytes": 64824
   }
 }

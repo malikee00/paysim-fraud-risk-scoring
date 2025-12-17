@@ -14,7 +14,7 @@ repro:
   seed: 42
 
 training:
-  train_cap_rows: 200000     
+  train_cap_rows: 500000     
   drop_cols: ["step"]
 
 model:
