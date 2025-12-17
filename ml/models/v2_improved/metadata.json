@@ -1,7 +1,7 @@
 {
   "model_flag": "v2",
   "model_type": "hgb",
-  "model_name": "hgb_v2_dest_only",
+  "model_name": "hgb_v2_improved",
   "features_path": "data/processed_local/features_v2_full.parquet",
   "target_col": "isfraud",
   "step_col": "step",
@@ -18,44 +18,49 @@
     "test": 575590
   },
   "metrics": {
-    "pr_auc": 0.8380000610144387,
+    "pr_auc": 0.8434347868836035,
     "threshold_table": [
       {
         "threshold": 0.1,
-        "precision": 0.13873199925191695,
-        "recall": 0.9927730192719486
-      },
-      {
-        "threshold": 0.2,
-        "precision": 0.14962848044419041,
-        "recall": 0.9809957173447538
+        "precision": 0.19582086243210287,
+        "recall": 0.9456638115631691
       },
       {
         "threshold": 0.3,
-        "precision": 0.16209409013222992,
-        "recall": 0.9646680942184154
+        "precision": 0.2923388874195539,
+        "recall": 0.8875802997858673
       },
       {
         "threshold": 0.5,
-        "precision": 0.18991259026005755,
-        "recall": 0.9362955032119914
+        "precision": 0.42033898305084744,
+        "recall": 0.8297644539614561
       },
       {
         "threshold": 0.7,
-        "precision": 0.2736475273813475,
-        "recall": 0.882762312633833
+        "precision": 0.5601206181681115,
+        "recall": 0.7955032119914347
+      },
+      {
+        "threshold": 0.9,
+        "precision": 0.8295158016816468,
+        "recall": 0.7657922912205567
+      },
+      {
+        "threshold": 0.95,
+        "precision": 0.9474916387959866,
+        "recall": 0.7582976445396146
       }
     ],
     "confusion_matrix": {
       "threshold": 0.5,
-      "tn": 556933,
-      "fp": 14921,
-      "fn": 238,
-      "tp": 3498
+      "tn": 567579,
+      "fp": 4275,
+      "fn": 636,
+      "tp": 3100
     }
   },
   "engineering": {
-    "runtime_sec": 8.269866599992383,
-    "model_size_bytes": 213280
+    "runtime_sec": 13.615383500000462,
+    "model_size_bytes": 331072
   }
 }

@@ -14,29 +14,30 @@
 
 ## Model
 - Model type: hgb
-- Model name: hgb_v2_dest_only
-- Params: `{"max_depth": 6, "learning_rate": 0.1, "max_iter": 200, "random_state": 42}`
+- Model name: hgb_v2_improved
+- Params: `{"max_depth": 12, "learning_rate": 0.05, "max_iter": 400, "min_samples_leaf": 40, "random_state": 42}`
 
 ## Metrics
-- **PR-AUC (Average Precision)**: **0.838000**
+- **PR-AUC (Average Precision)**: **0.843435**
 
 ### Precision/Recall @ Thresholds
 | Threshold | Precision | Recall |
 |---:|---:|---:|
-| 0.10 | 0.138732 | 0.992773 |
-| 0.20 | 0.149628 | 0.980996 |
-| 0.30 | 0.162094 | 0.964668 |
-| 0.50 | 0.189913 | 0.936296 |
-| 0.70 | 0.273648 | 0.882762 |
+| 0.10 | 0.195821 | 0.945664 |
+| 0.30 | 0.292339 | 0.887580 |
+| 0.50 | 0.420339 | 0.829764 |
+| 0.70 | 0.560121 | 0.795503 |
+| 0.90 | 0.829516 | 0.765792 |
+| 0.95 | 0.947492 | 0.758298 |
 
 ### Confusion Matrix (selected threshold)
 - Selected threshold: 0.50
 
 | | Pred 0 | Pred 1 |
 |---|---:|---:|
-| True 0 | 556,933 | 14,921 |
-| True 1 | 238 | 3,498 |
+| True 0 | 567,579 | 4,275 |
+| True 1 | 636 | 3,100 |
 
 ## Engineering
-- Training runtime: 8.27 sec
-- Model size: 208.28 KB
+- Training runtime: 13.62 sec
+- Model size: 323.31 KB
