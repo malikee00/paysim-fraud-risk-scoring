@@ -1,0 +1,17 @@
+data:
+  features_path: "data/processed_local/features_v1_full.parquet"
+
+schema:
+  step_col: "step"
+  target_col: "isFraud"
+
+split:
+  method: "temporal"
+  train_max_step: 600   # T 
+  test_min_step: 601    # T+1 
+
+repro:
+  seed: 42
+
+reports:
+  data_split_md: "ml/reports/data_split.md"

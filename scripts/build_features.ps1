@@ -1,7 +1,7 @@
 param(
-  [string]$InputParquet = "data/processed/transactions_clean.parquet",
-  [string]$OutFeatures = "data/processed/features_v1.parquet",
-  [string]$OutSummary = "data/processed/feature_summary.json"
+  [string]$InputParquet = "data/processed_local/transactions_clean_full.parquet",
+  [string]$OutFeatures = "data/processed_local/features_v1_full.parquet",
+  [string]$OutSummary = "data/processed_local/feature_summary_full.json"
 )
 
 Write-Host "=== FEATURE BUILD V1 ==="

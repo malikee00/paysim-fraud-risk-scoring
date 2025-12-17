@@ -97,9 +97,20 @@ def main() -> None:
         "dest_balance_increased",
     ] + [c for c in df_feat.columns if c.startswith("type_")]
 
-    # Keep label for training
-    final_cols = feature_cols + ["isfraud"]
+    META_COLS = ["step"]
+    TARGET_COL = "isFraud" 
+
+    if TARGET_COL not in df_feat.columns and "isfraud" in df_feat.columns:
+        TARGET_COL = "isfraud"
+
+    final_cols = META_COLS + feature_cols + [TARGET_COL]
+
+    missing = [c for c in final_cols if c not in df_feat.columns]
+    if missing:
+        raise KeyError(f"Missing columns for output: {missing}")
+
     df_out = df_feat[final_cols]
+
 
     ensure_parent(output_path)
     df_out.to_parquet(output_path, index=False)
