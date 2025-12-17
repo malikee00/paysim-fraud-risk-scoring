@@ -1,15 +1,23 @@
 # =========================
-# IMPORTANT: Data
+# Raw data
 # =========================
-
-# Ignore all raw & processed data by default
 data/raw/*
-data/processed/*
-
-# Allow small committed samples + docs
 !data/raw/sample_raw.csv
 !data/raw/sample_meta.json
-!data/README.md
+!data/raw/README.md
+
+# =========================
+# Processed data (COMMIT ZONE)
+# =========================
+data/processed/*
+!data/processed/transactions_clean.parquet
+!data/processed/features_v1.parquet
+!data/processed/feature_summary.json
+
+# =========================
+# Local-only processed data (FULL)
+# =========================
+data/processed_local/*
 
 # =========================
 # Python virtual env
