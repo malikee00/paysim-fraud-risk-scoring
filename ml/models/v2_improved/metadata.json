@@ -1,0 +1,61 @@
+{
+  "model_flag": "v2",
+  "model_type": "hgb",
+  "model_name": "hgb_v2_dest_only",
+  "features_path": "data/processed_local/features_v2_full.parquet",
+  "target_col": "isfraud",
+  "step_col": "step",
+  "split": {
+    "method": "temporal",
+    "train_max_step": 400,
+    "test_min_step": 401
+  },
+  "train_cap_rows": 200000,
+  "n_rows": {
+    "all": 6362620,
+    "train_full": 5787030,
+    "train_used": 200000,
+    "test": 575590
+  },
+  "metrics": {
+    "pr_auc": 0.7324313770999274,
+    "threshold_table": [
+      {
+        "threshold": 0.1,
+        "precision": 0.7863095238095238,
+        "recall": 0.7071734475374732
+      },
+      {
+        "threshold": 0.2,
+        "precision": 0.7931552086460523,
+        "recall": 0.7071734475374732
+      },
+      {
+        "threshold": 0.3,
+        "precision": 0.8194001276324187,
+        "recall": 0.6873661670235546
+      },
+      {
+        "threshold": 0.5,
+        "precision": 0.9807174887892377,
+        "recall": 0.5853854389721628
+      },
+      {
+        "threshold": 0.7,
+        "precision": 0.9779527559055118,
+        "recall": 0.49866167023554603
+      }
+    ],
+    "confusion_matrix": {
+      "threshold": 0.5,
+      "tn": 571811,
+      "fp": 43,
+      "fn": 1549,
+      "tp": 2187
+    }
+  },
+  "engineering": {
+    "runtime_sec": 6.228127099981066,
+    "model_size_bytes": 64824
+  }
+}

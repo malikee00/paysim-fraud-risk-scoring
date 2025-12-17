@@ -1,4 +1,3 @@
-# ml/training/train.py
 from __future__ import annotations
 
 import argparse
@@ -12,11 +11,11 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
     confusion_matrix,
-    precision_recall_curve,
     precision_score,
     recall_score,
 )
@@ -90,7 +89,12 @@ def load_config(path: str) -> TrainConfig:
     )
 
 
-def temporal_split(df: pd.DataFrame, step_col: str, train_max_step: int, test_min_step: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def temporal_split(
+    df: pd.DataFrame,
+    step_col: str,
+    train_max_step: int,
+    test_min_step: int,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     if test_min_step != train_max_step + 1:
         raise ValueError(
             f"Temporal contract violated: test_min_step={test_min_step} must equal train_max_step+1={train_max_step + 1}"
@@ -104,11 +108,26 @@ def temporal_split(df: pd.DataFrame, step_col: str, train_max_step: int, test_mi
 
 
 def make_model(model_type: str, params: Dict):
-    if model_type.lower() == "logreg":
-        # Ensure reproducibility where applicable
+    mt = str(model_type).lower()
+
+    if mt == "logreg":
         if "random_state" not in params:
             params["random_state"] = 42
         return LogisticRegression(**params)
+
+    if mt in {"hgb", "histgradientboosting", "histgradientboostingclassifier"}:
+        allowed = {
+            "loss", "learning_rate", "max_iter", "max_depth", "max_leaf_nodes",
+            "min_samples_leaf", "l2_regularization", "max_bins", "categorical_features",
+            "monotonic_cst", "interaction_cst", "warm_start", "early_stopping",
+            "scoring", "validation_fraction", "n_iter_no_change", "tol",
+            "verbose", "random_state"
+        }
+        clean_params = {k: v for k, v in params.items() if k in allowed}
+        if "random_state" not in clean_params:
+            clean_params["random_state"] = 42
+        return HistGradientBoostingClassifier(**clean_params)
+
     raise ValueError(f"Unsupported model_type: {model_type}")
 
 
@@ -118,6 +137,7 @@ def file_size_bytes(path: Path) -> int:
 
 def write_report_md(
     out_path: str,
+    model_flag: str,
     cfg: TrainConfig,
     n_all: int,
     n_train_full: int,
@@ -145,8 +165,10 @@ def write_report_md(
             return f"{n/1024**2:.2f} MB"
         return f"{n/1024**3:.2f} GB"
 
-    md = []
-    md.append("# Train Summary — Baseline V1 (LogReg)\n\n")
+    title = "Baseline V1" if model_flag == "v1" else "Improved V2"
+
+    md: List[str] = []
+    md.append(f"# Train Summary — {title} ({cfg.model_type})\n\n")
 
     md.append("## Data Contract\n")
     md.append(f"- Split: temporal (anti-leakage)\n")
@@ -161,8 +183,8 @@ def write_report_md(
     md.append(f"- Test rows: {fmt_int(n_test)}\n\n")
 
     md.append("## Model\n")
-    md.append(f"- Model: Logistic Regression\n")
-    md.append(f"- class_weight: balanced\n")
+    md.append(f"- Model type: {cfg.model_type}\n")
+    md.append(f"- Model name: {cfg.model_name}\n")
     md.append(f"- Params: `{json.dumps(cfg.model_params, ensure_ascii=False)}`\n\n")
 
     md.append("## Metrics\n")
@@ -190,13 +212,14 @@ def write_report_md(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Step 3.2 — Baseline training (V1)")
+    parser = argparse.ArgumentParser(description="Step 3.2/3.3 — Train V1/V2 (temporal split)")
     parser.add_argument("--config", type=str, default="ml/training/config.yaml")
-    parser.add_argument("--model", type=str, default="v1", help="Model flag (use: v1)")
+    parser.add_argument("--model", type=str, default="v1", help="Model flag (use: v1 or v2)")
     args = parser.parse_args()
 
-    if args.model.lower() != "v1":
-        raise ValueError("This script currently supports --model v1 only (baseline).")
+    model_flag = args.model.lower()
+    if model_flag not in {"v1", "v2"}:
+        raise ValueError("Supported --model: v1 (baseline), v2 (improved).")
 
     cfg = load_config(args.config)
 
@@ -238,12 +261,11 @@ def main() -> None:
     model.fit(X_train, y_train)
     runtime_sec = time.perf_counter() - t0
 
-    # Predict proba
+    # Predict score
     if hasattr(model, "predict_proba"):
         y_score = model.predict_proba(X_test)[:, 1]
     else:
-        # fallback (rare for logreg)
-        y_score = model.decision_function(X_test)
+        y_score = model.predict(X_test)
 
     # Primary metric: PR-AUC
     pr_auc = float(average_precision_score(y_test, y_score))
@@ -260,7 +282,7 @@ def main() -> None:
             }
         )
 
-    # Confusion matrix at selected threshold 
+    # Confusion matrix at selected threshold
     selected_th = 0.5 if 0.5 in [float(t) for t in cfg.thresholds] else float(cfg.thresholds[0])
     y_pred_sel = (y_score >= selected_th).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred_sel).ravel()
@@ -280,7 +302,7 @@ def main() -> None:
     joblib.dump(model, model_path)
 
     metadata = {
-        "model_flag": "v1",
+        "model_flag": model_flag,
         "model_type": cfg.model_type,
         "model_name": cfg.model_name,
         "features_path": cfg.features_path,
@@ -312,6 +334,7 @@ def main() -> None:
 
     write_report_md(
         out_path=cfg.report_md,
+        model_flag=model_flag,
         cfg=cfg,
         n_all=int(len(df)),
         n_train_full=int(n_train_full),
@@ -326,7 +349,7 @@ def main() -> None:
         model_size_bytes=int(file_size_bytes(model_path)),
     )
 
-    print(f"[OK] Baseline V1 trained. PR-AUC={pr_auc:.6f}")
+    print(f"[OK] {model_flag.upper()} trained. PR-AUC={pr_auc:.6f}")
     print(f"[OK] Saved model: {model_path}")
     print(f"[OK] Saved metadata: {model_dir / 'metadata.json'}")
     print(f"[OK] Wrote report: {cfg.report_md}")
