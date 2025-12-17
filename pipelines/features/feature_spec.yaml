@@ -1,0 +1,29 @@
+version: v1
+input: data/processed/transactions_clean.parquet
+output:
+  features: data/processed/features_v1.parquet
+  summary: data/processed/feature_summary.json
+
+numerical_features:
+  - log_amount
+  - delta_org
+  - delta_dest
+  - org_delta_mismatch
+  - dest_delta_mismatch
+
+binary_flags:
+  - org_balance_decreased
+  - dest_balance_increased
+
+categorical_encoding:
+  type:
+    method: one_hot
+    categories:
+      - PAYMENT
+      - TRANSFER
+      - CASH_OUT
+      - DEBIT
+      - CASH_IN
+
+label:
+  name: isfraud
