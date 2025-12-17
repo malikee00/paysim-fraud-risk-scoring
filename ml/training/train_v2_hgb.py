@@ -12,6 +12,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -245,7 +246,8 @@ def main() -> None:
     # Cap training rows (after split)
     n_train_full = len(train_df)
     if cfg.train_cap_rows > 0 and len(train_df) > cfg.train_cap_rows:
-        train_df = train_df.sample(n=cfg.train_cap_rows, random_state=cfg.seed)
+    # Ambil data paling baru (step tertinggi) di masa training
+        train_df = train_df.sort_values(cfg.step_col).tail(cfg.train_cap_rows)
     n_train_used = len(train_df)
 
     # Prepare X/y (drop non-feature cols)
@@ -258,9 +260,12 @@ def main() -> None:
 
     # Fit model
     model = make_model(cfg.model_type, cfg.model_params)
+    # Hitung bobot otomatis (balanced)
+    weights = compute_sample_weight('balanced', y_train)
 
     t0 = time.perf_counter()
-    model.fit(X_train, y_train)
+    # Fit dengan sample_weight
+    model.fit(X_train, y_train, sample_weight=weights)
     runtime_sec = time.perf_counter() - t0
 
     # Predict score

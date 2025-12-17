@@ -9,7 +9,7 @@
 ## Data Size
 - Total rows: 6,362,620
 - Train rows (full split): 5,787,030
-- Train rows used (cap): **200,000**
+- Train rows used (cap): **500,000**
 - Test rows: 575,590
 
 ## Model
@@ -18,25 +18,25 @@
 - Params: `{"max_depth": 6, "learning_rate": 0.1, "max_iter": 200, "random_state": 42}`
 
 ## Metrics
-- **PR-AUC (Average Precision)**: **0.732431**
+- **PR-AUC (Average Precision)**: **0.838000**
 
 ### Precision/Recall @ Thresholds
 | Threshold | Precision | Recall |
 |---:|---:|---:|
-| 0.10 | 0.786310 | 0.707173 |
-| 0.20 | 0.793155 | 0.707173 |
-| 0.30 | 0.819400 | 0.687366 |
-| 0.50 | 0.980717 | 0.585385 |
-| 0.70 | 0.977953 | 0.498662 |
+| 0.10 | 0.138732 | 0.992773 |
+| 0.20 | 0.149628 | 0.980996 |
+| 0.30 | 0.162094 | 0.964668 |
+| 0.50 | 0.189913 | 0.936296 |
+| 0.70 | 0.273648 | 0.882762 |
 
 ### Confusion Matrix (selected threshold)
 - Selected threshold: 0.50
 
 | | Pred 0 | Pred 1 |
 |---|---:|---:|
-| True 0 | 571,811 | 43 |
-| True 1 | 1,549 | 2,187 |
+| True 0 | 556,933 | 14,921 |
+| True 1 | 238 | 3,498 |
 
 ## Engineering
-- Training runtime: 4.17 sec
-- Model size: 63.30 KB
+- Training runtime: 8.27 sec
+- Model size: 208.28 KB

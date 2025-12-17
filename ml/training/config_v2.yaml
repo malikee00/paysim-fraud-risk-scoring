@@ -18,16 +18,19 @@ training:
   drop_cols: ["step"]
 
 model:
-  name: "hgb_v2_dest_only"
+  name: "hgb_v2_improved"
   type: "hgb"
   params:
-    max_depth: 6
-    learning_rate: 0.1
-    max_iter: 200
+    max_depth: 12        # Dinaikkan dari 6 agar model lebih teliti membedakan pattern
+    learning_rate: 0.05  # Diturunkan agar model belajar lebih stabil (robust)
+    max_iter: 400        # Ditambah karena learning_rate turun
+    min_samples_leaf: 40 # Menghindari overfit (biar gak gampang kena False Positive)
     random_state: 42
 
 thresholds:
-  report: [0.1, 0.2, 0.3, 0.5, 0.7]
+  # Ditambah 0.9 dan 0.95 karena sekarang model kamu pakai weighting, 
+  # jadi score-nya cenderung "ngumpul" di angka tinggi
+  report: [0.1, 0.3, 0.5, 0.7, 0.9, 0.95]
 
 artifacts:
   model_dir: "ml/models/v2_improved"

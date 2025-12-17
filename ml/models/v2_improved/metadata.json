@@ -10,52 +10,52 @@
     "train_max_step": 400,
     "test_min_step": 401
   },
-  "train_cap_rows": 200000,
+  "train_cap_rows": 500000,
   "n_rows": {
     "all": 6362620,
     "train_full": 5787030,
-    "train_used": 200000,
+    "train_used": 500000,
     "test": 575590
   },
   "metrics": {
-    "pr_auc": 0.7324313770999274,
+    "pr_auc": 0.8380000610144387,
     "threshold_table": [
       {
         "threshold": 0.1,
-        "precision": 0.7863095238095238,
-        "recall": 0.7071734475374732
+        "precision": 0.13873199925191695,
+        "recall": 0.9927730192719486
       },
       {
         "threshold": 0.2,
-        "precision": 0.7931552086460523,
-        "recall": 0.7071734475374732
+        "precision": 0.14962848044419041,
+        "recall": 0.9809957173447538
       },
       {
         "threshold": 0.3,
-        "precision": 0.8194001276324187,
-        "recall": 0.6873661670235546
+        "precision": 0.16209409013222992,
+        "recall": 0.9646680942184154
       },
       {
         "threshold": 0.5,
-        "precision": 0.9807174887892377,
-        "recall": 0.5853854389721628
+        "precision": 0.18991259026005755,
+        "recall": 0.9362955032119914
       },
       {
         "threshold": 0.7,
-        "precision": 0.9779527559055118,
-        "recall": 0.49866167023554603
+        "precision": 0.2736475273813475,
+        "recall": 0.882762312633833
       }
     ],
     "confusion_matrix": {
       "threshold": 0.5,
-      "tn": 571811,
-      "fp": 43,
-      "fn": 1549,
-      "tp": 2187
+      "tn": 556933,
+      "fp": 14921,
+      "fn": 238,
+      "tp": 3498
     }
   },
   "engineering": {
-    "runtime_sec": 4.1705900999950245,
-    "model_size_bytes": 64824
+    "runtime_sec": 8.269866599992383,
+    "model_size_bytes": 213280
   }
 }
