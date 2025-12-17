@@ -2,8 +2,8 @@
 
 ## Contract
 - split.method: temporal
-- train_max_step (T): 600
-- test_min_step (T+1): 601
+- train_max_step (T): 400
+- test_min_step (T+1): 401
 
 ## Dataset Overview
 - Total rows: 6,362,620
@@ -12,9 +12,9 @@
 ## Split Summary
 | Split | Rows | Step Range | Fraud Rate |
 |---|---:|---|---:|
-| Train | 6,259,047 | 1 → 600 | N/A |
-| Test | 103,573 | 601 → 743 | N/A |
+| Train | 5,787,030 | 1 → 400 | N/A |
+| Test | 575,590 | 401 → 743 | N/A |
 
 ## Sanity Checks
- No overlap: max(train.step)=600 < min(test.step)=601
+ No overlap: max(train.step)=400 < min(test.step)=401
  Temporal split (anti-leakage): train uses past steps only

@@ -3,15 +3,32 @@ data:
 
 schema:
   step_col: "step"
-  target_col: "isFraud"
+  target_col: "isfraud"   
 
 split:
   method: "temporal"
-  train_max_step: 600   # T 
-  test_min_step: 601    # T+1 
+  train_max_step: 400
+  test_min_step: 401
 
 repro:
   seed: 42
 
-reports:
-  data_split_md: "ml/reports/data_split.md"
+training:
+  train_cap_rows: 500000
+  drop_cols: ["step"]
+
+model:
+  name: "logreg_v1"
+  type: "logreg"
+  params:
+    max_iter: 200
+    solver: "lbfgs"
+    class_weight: "balanced"
+    n_jobs: -1
+
+thresholds:
+  report: [0.1, 0.2, 0.3, 0.5, 0.7]
+
+artifacts:
+  model_dir: "ml/models/v1_baseline"
+  report_md: "ml/reports/train_summary.md"
