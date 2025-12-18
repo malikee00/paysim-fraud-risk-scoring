@@ -11,7 +11,7 @@ split:
   test_min_step: 401
 
 training:
-  train_cap_rows: 1000000
+  train_cap_rows: 6362620
   drop_cols: ["step"]
 
 model:
@@ -30,4 +30,4 @@ thresholds:
 
 artifacts:
   model_dir: "ml/models/v2_improved"
-  report_md: "ml/reports/train_summary_v2_improved.md"
+  report_md: "ml/reports/train_summary_v2_full_sample.md"
