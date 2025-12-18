@@ -14,9 +14,61 @@ data/processed/*
 !data/processed/features_v1.parquet
 !data/processed/feature_summary.json
 
+# ===============================
+# Large generated artifacts
+# ===============================
+
 # Inference outputs
 ml/inference/predictions.csv
 ml/inference/*.csv
+
+# Evaluation artifacts
+ml/reports/*.csv
+ml/reports/*.png
+
+# Model artifacts (local only)
+ml/models/**/model.pkl
+ml/models/**/metadata.json
+
+# Threshold & registry pointers (keep YAML, ignore backups)
+ml/models/*.bak
+ml/models/*.tmp
+
+# ===============================
+# ML / Data
+# ===============================
+
+# Local processed data (FULL datasets)
+data/processed_local/
+data/raw/
+
+# Allow small samples only
+!data/processed/sample_*.csv
+!data/processed/sample_*.parquet
+
+# ===============================
+# MLflow
+# ===============================
+mlruns/
+
+# ===============================
+# Python
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual env
+.venv/
+
+# ===============================
+# OS
+# ===============================
+.DS_Store
+Thumbs.db
+
 
 # =========================
 # Local-only processed data (FULL)
