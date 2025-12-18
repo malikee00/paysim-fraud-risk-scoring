@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/kamil/Documents/SELF%20PROJECT/BIG%20ML%20Project/PaySim/mlruns/915216353785236920/450798fec7f8423c998e4ccb76ffa7c2/artifacts
+end_time: 1766069635965
+entry_point_name: ''
+experiment_id: '915216353785236920'
+lifecycle_stage: active
+run_id: 450798fec7f8423c998e4ccb76ffa7c2
+run_name: v2_hgb_final_polish
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766069634558
+status: 3
+tags: []
+user_id: kamil

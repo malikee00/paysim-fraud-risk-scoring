@@ -143,7 +143,7 @@ def main() -> None:
     df_feat = build_base_features(df)
 
     print("[V2] Building Destination velocity + Ratios...")
-    df_feat = add_dest_velocity(df_feat, windows=[3, 10, 200]) 
+    df_feat = add_dest_velocity(df_feat, windows=[10, 50]) 
 
     print("[V2] Building Destination unique-origin history...")
     df_feat = dest_unique_origin_history(df_feat)

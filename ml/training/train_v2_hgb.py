@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+import mlflow
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -20,6 +21,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
+from mlflow_utils import setup_mlflow, log_params_flat, log_metrics_flat, log_artifact_if_exists
 
 
 @dataclass(frozen=True)
@@ -88,7 +90,6 @@ def load_config(path: str) -> TrainConfig:
         model_dir=model_dir,
         report_md=report_md,
     )
-
 
 def temporal_split(
     df: pd.DataFrame,
@@ -216,6 +217,9 @@ def write_report_md(
 
     Path(out_path).write_text("".join(md), encoding="utf-8")
 
+def load_yaml_dict(path: str) -> Dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Step 3.2/3.3 — Train V1/V2 (temporal split)")
@@ -228,6 +232,13 @@ def main() -> None:
         raise ValueError("Supported --model: v1 (baseline), v2 (improved).")
 
     cfg = load_config(args.config)
+    raw_cfg = load_yaml_dict(args.config)
+    mlcfg = setup_mlflow(raw_cfg, default_run_name=f"train_{model_flag}")
+
+    print("[DEBUG] mlflow.enable:", mlcfg.get("enable"))
+    print("[DEBUG] mlflow.tracking_uri:", mlcfg.get("tracking_uri"))
+    print("[DEBUG] mlflow.experiment_name:", mlcfg.get("experiment_name"))
+
 
     features_path = Path(cfg.features_path)
     if not features_path.exists():
@@ -235,24 +246,20 @@ def main() -> None:
 
     df = pd.read_parquet(features_path)
 
-    # Column checks
     for col in [cfg.step_col, cfg.target_col]:
         if col not in df.columns:
             raise KeyError(f"Missing required column '{col}'. Available: {list(df.columns)[:30]}...")
 
-    # Split
     if cfg.split_method.lower() != "temporal":
         raise ValueError(f"Only temporal split is supported. Got: {cfg.split_method}")
 
     train_df, test_df = temporal_split(df, cfg.step_col, cfg.train_max_step, cfg.test_min_step)
 
-    # Cap training rows (after split)
     n_train_full = len(train_df)
     if cfg.train_cap_rows > 0 and len(train_df) > cfg.train_cap_rows:
         train_df = train_df.sort_values(cfg.step_col).tail(cfg.train_cap_rows)
     n_train_used = len(train_df)
 
-    # Prepare X/y (drop non-feature cols)
     drop_cols = set(cfg.drop_cols + [cfg.target_col])
     X_train = train_df.drop(columns=[c for c in drop_cols if c in train_df.columns])
     y_train = train_df[cfg.target_col].astype(int)
@@ -260,7 +267,6 @@ def main() -> None:
     X_test = test_df.drop(columns=[c for c in drop_cols if c in test_df.columns])
     y_test = test_df[cfg.target_col].astype(int)
 
-    # Fit model
     model = make_model(cfg.model_type, cfg.model_params)
     weights = np.where(y_train == 1, 20, 1)
 
@@ -273,10 +279,8 @@ def main() -> None:
     else:
         y_score = model.predict(X_test)
 
-    # Primary metric: PR-AUC
     pr_auc = float(average_precision_score(y_test, y_score))
 
-    # Precision/Recall @ thresholds
     th_table: List[Dict] = []
     for th in cfg.thresholds:
         y_pred = (y_score >= float(th)).astype(int)
@@ -288,22 +292,23 @@ def main() -> None:
             }
         )
 
-    # Confusion matrix at selected threshold
     selected_th = 0.5 if 0.5 in [float(t) for t in cfg.thresholds] else float(cfg.thresholds[0])
     y_pred_sel = (y_score >= selected_th).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred_sel).ravel()
-    cm_payload = {
-        "threshold": float(selected_th),
-        "tn": int(tn),
-        "fp": int(fp),
-        "fn": int(fn),
-        "tp": int(tp),
-    }
+    cm_payload = {"threshold": float(selected_th), "tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)}
 
-    # Save artifacts
+    # thresholds.yaml
+    thresholds_path = Path("ml/reports/thresholds.yaml")
+    thresholds_path.parent.mkdir(parents=True, exist_ok=True)
+    yaml.safe_dump(
+        {"selected_threshold": float(selected_th), "report_thresholds": [float(t) for t in cfg.thresholds]},
+        open(thresholds_path, "w", encoding="utf-8"),
+        sort_keys=False,
+    )
+
+    # Save model + metadata
     model_dir = Path(cfg.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
-
     model_path = model_dir / "model.pkl"
     joblib.dump(model, model_path)
 
@@ -314,30 +319,15 @@ def main() -> None:
         "features_path": cfg.features_path,
         "target_col": cfg.target_col,
         "step_col": cfg.step_col,
-        "split": {
-            "method": cfg.split_method,
-            "train_max_step": cfg.train_max_step,
-            "test_min_step": cfg.test_min_step,
-        },
+        "split": {"method": cfg.split_method, "train_max_step": cfg.train_max_step, "test_min_step": cfg.test_min_step},
         "train_cap_rows": cfg.train_cap_rows,
-        "n_rows": {
-            "all": int(len(df)),
-            "train_full": int(n_train_full),
-            "train_used": int(n_train_used),
-            "test": int(len(test_df)),
-        },
-        "metrics": {
-            "pr_auc": pr_auc,
-            "threshold_table": th_table,
-            "confusion_matrix": cm_payload,
-        },
-        "engineering": {
-            "runtime_sec": float(runtime_sec),
-            "model_size_bytes": int(file_size_bytes(model_path)),
-        },
+        "n_rows": {"all": int(len(df)), "train_full": int(n_train_full), "train_used": int(n_train_used), "test": int(len(test_df))},
+        "metrics": {"pr_auc": pr_auc, "threshold_table": th_table, "confusion_matrix": cm_payload},
+        "engineering": {"runtime_sec": float(runtime_sec), "model_size_bytes": int(file_size_bytes(model_path))},
     }
     (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
+    # Report md
     write_report_md(
         out_path=cfg.report_md,
         model_flag=model_flag,
@@ -355,12 +345,60 @@ def main() -> None:
         model_size_bytes=int(file_size_bytes(model_path)),
     )
 
+    # eval_report.md
+    eval_report_path = Path("ml/reports/eval_report.md")
+    eval_report_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_report_path.write_text(Path(cfg.report_md).read_text(encoding="utf-8"), encoding="utf-8")
+
+    # MLflow logging
+    if mlcfg.get("enable"):
+        with mlflow.start_run(run_name=mlcfg["run_name"]):
+            for k, v in mlcfg.get("tags", {}).items():
+                mlflow.set_tag(k, v)
+
+            log_params_flat(
+                {
+                    "model_flag": model_flag,
+                    "model_type": cfg.model_type,
+                    "model_name": cfg.model_name,
+                    "feature_version": (raw_cfg.get("mlflow", {}).get("tags", {}) or {}).get("feature_version", "unknown"),
+                    "features_path": cfg.features_path,
+                    "seed": cfg.seed,
+                    "train_cap_rows": cfg.train_cap_rows,
+                    "drop_cols": cfg.drop_cols,
+                    "split_method": cfg.split_method,
+                    "train_max_step": cfg.train_max_step,
+                    "test_min_step": cfg.test_min_step,
+                },
+                prefix="contract",
+            )
+            log_params_flat(cfg.model_params, prefix="hparams")
+
+            log_metrics_flat(
+                {
+                    "pr_auc": pr_auc,
+                    "runtime_sec": runtime_sec,
+                    "model_size_bytes": float(file_size_bytes(model_path)),
+                },
+                prefix="metrics",
+            )
+
+            for row in th_table:
+                th = float(row["threshold"])
+                mlflow.log_metric(f"precision_{th:.2f}", float(row["precision"]))
+                mlflow.log_metric(f"recall_{th:.2f}", float(row["recall"]))
+
+            log_artifact_if_exists(cfg.report_md)
+            log_artifact_if_exists(str(eval_report_path))
+            log_artifact_if_exists(str(thresholds_path))
+            log_artifact_if_exists(str(model_dir / "metadata.json"))
+            log_artifact_if_exists(str(model_path))
+
     print(f"[OK] {model_flag.upper()} trained. PR-AUC={pr_auc:.6f}")
     print(f"[OK] Saved model: {model_path}")
     print(f"[OK] Saved metadata: {model_dir / 'metadata.json'}")
     print(f"[OK] Wrote report: {cfg.report_md}")
     print(f"Train used: {n_train_used:,} (cap={cfg.train_cap_rows:,}) | Test: {len(test_df):,}")
-
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/kamil/Documents/SELF%20PROJECT/BIG%20ML%20Project/PaySim/mlruns/915216353785236920/4f08414c624240daba8a767814d1e15a/artifacts
+end_time: 1766071659076
+entry_point_name: ''
+experiment_id: '915216353785236920'
+lifecycle_stage: active
+run_id: 4f08414c624240daba8a767814d1e15a
+run_name: v1_logreg_sample
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766071657360
+status: 3
+tags: []
+user_id: kamil

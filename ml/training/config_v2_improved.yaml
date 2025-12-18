@@ -31,3 +31,11 @@ thresholds:
 artifacts:
   model_dir: "ml/models/v2_improved"
   report_md: "ml/reports/train_summary_v2_full_sample.md"
+
+mlflow:
+  enable: true
+  tracking_uri: "mlruns"
+  experiment_name: "paysim-fraud-risk-scoring"
+  run_name: "v2_hgb_final_polish"
+  tags:
+    feature_version: "v2"

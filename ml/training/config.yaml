@@ -32,3 +32,11 @@ thresholds:
 artifacts:
   model_dir: "ml/models/v1_baseline"
   report_md: "ml/reports/train_summary.md"
+
+mlflow:
+  enable: true
+  tracking_uri: "mlruns"
+  experiment_name: "paysim-fraud-risk-scoring"
+  run_name: "v1_logreg_sample"
+  tags:
+    feature_version: "v1"

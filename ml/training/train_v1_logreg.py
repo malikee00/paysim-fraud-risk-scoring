@@ -11,6 +11,9 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+import mlflow
+from mlflow_utils import setup_mlflow, log_params_flat, log_metrics_flat, log_artifact_if_exists
+
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -210,7 +213,10 @@ def write_report_md(
 
     Path(out_path).write_text("".join(md), encoding="utf-8")
 
-
+def load_yaml_dict(path: str) -> Dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+    
 def main() -> None:
     parser = argparse.ArgumentParser(description="Step 3.2/3.3 — Train V1/V2 (temporal split)")
     parser.add_argument("--config", type=str, default="ml/training/config.yaml")
@@ -222,6 +228,8 @@ def main() -> None:
         raise ValueError("Supported --model: v1 (baseline), v2 (improved).")
 
     cfg = load_config(args.config)
+    raw_cfg = load_yaml_dict(args.config)
+    mlcfg = setup_mlflow(raw_cfg, default_run_name=f"train_{model_flag}")
 
     features_path = Path(cfg.features_path)
     if not features_path.exists():
@@ -348,6 +356,54 @@ def main() -> None:
         runtime_sec=runtime_sec,
         model_size_bytes=int(file_size_bytes(model_path)),
     )
+    raw_cfg = load_yaml_dict(args.config)
+    mlcfg = raw_cfg.get("mlflow", {}) or {}
+    if mlcfg.get("enable", False):
+        tracking_uri = mlcfg.get("tracking_uri", "mlruns")
+        mlflow.set_tracking_uri(tracking_uri)
+
+        exp_name = mlcfg.get("experiment_name", "Default")
+        mlflow.set_experiment(exp_name)
+
+        run_name = mlcfg.get("run_name", f"train_{model_flag}")
+
+        with mlflow.start_run(run_name=run_name):
+            # tags
+            for k, v in (mlcfg.get("tags", {}) or {}).items():
+                mlflow.set_tag(str(k), str(v))
+            mlflow.set_tag("model_flag", model_flag)
+
+            # params (biar rapi, prefix manual)
+            mlflow.log_param("contract.model_type", cfg.model_type)
+            mlflow.log_param("contract.model_name", cfg.model_name)
+            mlflow.log_param("contract.features_path", cfg.features_path)
+            mlflow.log_param("contract.split_method", cfg.split_method)
+            mlflow.log_param("contract.train_max_step", cfg.train_max_step)
+            mlflow.log_param("contract.test_min_step", cfg.test_min_step)
+            mlflow.log_param("contract.train_cap_rows", cfg.train_cap_rows)
+            mlflow.log_param("contract.drop_cols", ",".join(cfg.drop_cols))
+            mlflow.log_param("contract.seed", cfg.seed)
+
+            # model params (logreg)
+            for k, v in cfg.model_params.items():
+                mlflow.log_param(f"hparams.{k}", v)
+
+            # metrics
+            mlflow.log_metric("metrics.pr_auc", pr_auc)
+            mlflow.log_metric("metrics.runtime_sec", runtime_sec)
+            mlflow.log_metric("metrics.model_size_bytes", float(file_size_bytes(model_path)))
+
+            # threshold metrics
+            for row in th_table:
+                th = float(row["threshold"])
+                mlflow.log_metric(f"threshold/precision_{th:.2f}", float(row["precision"]))
+                mlflow.log_metric(f"threshold/recall_{th:.2f}", float(row["recall"]))
+
+
+            # artifacts
+            mlflow.log_artifact(str(model_path))
+            mlflow.log_artifact(str(model_dir / "metadata.json"))
+            mlflow.log_artifact(str(Path(cfg.report_md)))
 
     print(f"[OK] {model_flag.upper()} trained. PR-AUC={pr_auc:.6f}")
     print(f"[OK] Saved model: {model_path}")
