@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import average_precision_score
 
 from ml.evaluation.thresholding import pick_t1_t2, pr_curve_points, threshold_table
+from ml.evaluation.error_analysis import ErrorCaseConfig, extract_error_cases, write_error_cases_csv
+
 
 @dataclass(frozen=True)
 class EvalConfig:
@@ -43,6 +45,12 @@ class EvalConfig:
     seg_user_activity_col: Optional[str]
     seg_top_k: int
 
+    error_cases_csv: str
+    error_top_k: int
+    error_amount_col: Optional[str]
+    error_id_cols: Optional[List[str]]
+
+
 
 def load_yaml(path: str) -> Dict:
     with open(path, "r", encoding="utf-8") as f:
@@ -65,6 +73,11 @@ def load_eval_config(path: str) -> EvalConfig:
     pr_curve_png = str(ev.get("pr_curve_png", "ml/reports/pr_curve.png"))
     thresholds_yaml = str(ev.get("thresholds_yaml", "ml/reports/thresholds.yaml"))
     eval_report_md = str(ev.get("eval_report_md", "ml/reports/eval_report.md"))
+    error_cases_csv = str(ev.get("error_cases_csv", "ml/reports/error_cases.csv"))
+    error_top_k = int(ev.get("error_top_k", 5))
+    error_amount_col = ev.get("error_amount_col", None)
+    error_id_cols = ev.get("error_id_cols", None)
+
     candidate_thresholds = list(ev.get("candidate_thresholds", []))
 
     pol = ev.get("policy", {}) or {}
@@ -104,6 +117,11 @@ def load_eval_config(path: str) -> EvalConfig:
         seg_amount_bins=amount_bins,
         seg_user_activity_col=user_activity_col,
         seg_top_k=top_k,
+        error_cases_csv=error_cases_csv,
+        error_top_k=error_top_k,
+        error_amount_col=error_amount_col,
+        error_id_cols=error_id_cols,
+
     )
 
 
@@ -279,8 +297,9 @@ def write_eval_report_md(
     th_table: List[Dict],
     bucket_perf: Dict,
     segments: Dict[str, List[Dict]],
+    error_cases: Dict[str, pd.DataFrame],
+    error_cases_csv_path: Optional[str] = None,
 ) -> None:
-    ensure_parent(out_path)
 
     md: List[str] = []
     md.append("# Evaluation Report\n\n")
@@ -331,6 +350,44 @@ def write_eval_report_md(
     md.append(f"- block_rate: {rates.get('block_rate',0.0):.6f}\n\n")
 
     md.append("\n")
+
+    md.append("## Error Analysis\n")
+    md.append("Fokus: (1) **False Negative yang lolos (APPROVE)** dan (2) **False Positive yang keblok (BLOCK)**.\n\n")
+
+    fn_df = error_cases.get("fn_approve")
+    fp_df = error_cases.get("fp_block")
+
+    md.append("### False Negatives — Fraud APPROVED (worst-case)\n")
+    if fn_df is None or fn_df.empty:
+        md.append("_No FN approve cases found (or columns not available)._ \n\n")
+    else:
+        md.append(f"- Showing top {len(fn_df)} cases (prioritize high amount / high score)\n\n")
+        md.append(fn_df.to_markdown(index=False))
+        md.append("\n\n")
+
+    md.append("### False Positives — Legit BLOCKED (most painful)\n")
+    if fp_df is None or fp_df.empty:
+        md.append("_No FP block cases found (or columns not available)._ \n\n")
+    else:
+        md.append(f"- Showing top {len(fp_df)} cases (prioritize high amount / high score)\n\n")
+        md.append(fp_df.to_markdown(index=False))
+        md.append("\n\n")
+
+    md.append("### Hypotheses & Next Actions (3–5 bullets)\n")
+    bullets = [
+        "FN approve cenderung terjadi pada pola velocity/sequence yang belum tertangkap (butuh fitur tx_count_recent / amount_sum_recent).",
+        "FP block kemungkinan pada transaksi legitimate beramount tinggi yang mirip fraud; butuh fitur baseline perilaku per user (typical_amount / zscore).",
+        "Pertimbangkan score calibration (Platt/Isotonic) agar confidence lebih stabil sebelum menetapkan T2 sangat tinggi.",
+        "Tambahkan evaluasi per segmen (type, amount bucket, user activity) untuk menemukan blind spot spesifik segmen.",
+    ]
+    for b in bullets[:5]:
+        md.append(f"- {b}\n")
+    md.append("\n")
+
+    if error_cases_csv_path:
+        md.append(f"_(Optional) Full cases exported to `{Path(error_cases_csv_path).as_posix()}`_\n\n")
+
+
 
     md.append("## D) Segment-level Evaluation (Top worst)\n")
     for title, rows in segments.items():
@@ -416,6 +473,21 @@ def main() -> None:
     # C) Bucket eval
     bucket_perf = bucket_metrics(y_test, y_score, t1, t2)
 
+    cases = extract_error_cases(
+        df_test=df_test,
+        y_true=y_test,
+        y_score=y_score,
+        t1=t1,
+        t2=t2,
+        cfg=ErrorCaseConfig(
+            top_k=cfg.error_top_k,
+            amount_col=cfg.error_amount_col,
+            id_cols=cfg.error_id_cols,
+        ),
+    )
+    write_error_cases_csv(cases, cfg.error_cases_csv)
+
+
     # D) Segment eval
     segments: Dict[str, List[Dict]] = {}
 
@@ -448,7 +520,17 @@ def main() -> None:
         segments["By user activity proxy"] = []
 
     # Report
-    write_eval_report_md(cfg.eval_report_md, pr_auc, t1, t2, th_table, bucket_perf, segments)
+    write_eval_report_md(
+    cfg.eval_report_md,
+    pr_auc,
+    t1,
+    t2,
+    th_table,
+    bucket_perf,
+    segments,
+    cases,
+    error_cases_csv_path=cfg.error_cases_csv,
+)
 
     print("[OK] Evaluation done")
     print(f"[OK] PR-AUC={pr_auc:.6f}")

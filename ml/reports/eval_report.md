@@ -48,6 +48,39 @@ Decision mapping:
 - block_rate: 0.004844
 
 
+## Error Analysis
+Fokus: (1) **False Negative yang lolos (APPROVE)** dan (2) **False Positive yang keblok (BLOCK)**.
+
+### False Negatives — Fraud APPROVED (worst-case)
+- Showing top 5 cases (prioritize high amount / high score)
+
+|   _score |   _bucket |
+|---------:|----------:|
+| 0.492985 |         0 |
+| 0.491587 |         0 |
+| 0.489648 |         0 |
+| 0.485595 |         0 |
+| 0.47642  |         0 |
+
+### False Positives — Legit BLOCKED (most painful)
+- Showing top 5 cases (prioritize high amount / high score)
+
+|   _score |   _bucket |
+|---------:|----------:|
+| 0.994593 |         2 |
+| 0.982606 |         2 |
+| 0.954632 |         2 |
+| 0.939497 |         2 |
+| 0.939156 |         2 |
+
+### Hypotheses & Next Actions (3–5 bullets)
+- FN approve cenderung terjadi pada pola velocity/sequence yang belum tertangkap (butuh fitur tx_count_recent / amount_sum_recent).
+- FP block kemungkinan pada transaksi legitimate beramount tinggi yang mirip fraud; butuh fitur baseline perilaku per user (typical_amount / zscore).
+- Pertimbangkan score calibration (Platt/Isotonic) agar confidence lebih stabil sebelum menetapkan T2 sangat tinggi.
+- Tambahkan evaluasi per segmen (type, amount bucket, user activity) untuk menemukan blind spot spesifik segmen.
+
+_(Optional) Full cases exported to `ml/reports/error_cases.csv`_
+
 ## D) Segment-level Evaluation (Top worst)
 ### By type
 _Skipped (segment column not available)_

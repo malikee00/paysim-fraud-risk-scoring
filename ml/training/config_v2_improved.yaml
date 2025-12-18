@@ -64,3 +64,8 @@ evaluation:
     amount_bins: [0, 1000000, 5000000, 20000000, 999999999999] 
     user_activity_col: "tx_count_recent"  
     top_k: 5
+
+  error_cases_csv: "ml/reports/error_cases.csv"
+  error_top_k: 5
+  error_amount_col: "amount"        
+  error_id_cols: ["nameOrig", "nameDest"]   
