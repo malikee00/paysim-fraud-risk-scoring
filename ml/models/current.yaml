@@ -1,0 +1,12 @@
+current:
+  version: v2
+  model_dir: ml/models/v2_improved
+  model_path: ml/models/v2_improved/model.pkl
+  metadata_path: ml/models/v2_improved/metadata.json
+
+thresholds:
+  path: ml/reports/thresholds.yaml
+
+reports:
+  eval_report: ml/reports/eval_report.md
+  train_summary: ml/reports/train_summary_v2.md
