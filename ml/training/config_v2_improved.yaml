@@ -3,7 +3,7 @@ data:
 
 schema:
   step_col: "step"
-  target_col: "isfraud" # pastikan case-sensitive-nya sama dengan output build_features tadi
+  target_col: "isfraud" 
 
 split:
   method: "temporal"
@@ -39,3 +39,28 @@ mlflow:
   run_name: "v2_hgb_final_polish"
   tags:
     feature_version: "v2"
+
+evaluation:
+  pr_curve_png: "ml/reports/pr_curve.png"
+  thresholds_yaml: "ml/reports/thresholds.yaml"
+  eval_report_md: "ml/reports/eval_report.md"
+
+  candidate_thresholds: [0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95]
+
+    # Decision policy: approve / review / block
+    # score < T1  => APPROVE (low risk)
+    # T1..T2      => REVIEW  (medium)
+    # >= T2       => BLOCK   (high)
+  policy:
+    target_precision_T2: 0.995
+    min_recall_T2: 0.70
+    min_review_rate: 0.001
+    max_review_rate: 0.005
+    max_review_band_width: 0.35    
+
+  segments:
+    by_type_col: "type"            
+    amount_col: "amount"           
+    amount_bins: [0, 1000000, 5000000, 20000000, 999999999999] 
+    user_activity_col: "tx_count_recent"  
+    top_k: 5

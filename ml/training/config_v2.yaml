@@ -28,8 +28,6 @@ model:
     random_state: 42
 
 thresholds:
-  # Ditambah 0.9 dan 0.95 karena sekarang model kamu pakai weighting, 
-  # jadi score-nya cenderung "ngumpul" di angka tinggi
   report: [0.1, 0.3, 0.5, 0.7, 0.9, 0.95]
 
 artifacts:
