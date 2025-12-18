@@ -1,8 +1,8 @@
 {
   "model_flag": "v2",
   "model_type": "hgb",
-  "model_name": "hgb_v2_improved",
-  "features_path": "data/processed_local/features_v2_full.parquet",
+  "model_name": "hgb_v2_final_polish",
+  "features_path": "data/processed_local/features_v2_full_sakti.parquet",
   "target_col": "isfraud",
   "step_col": "step",
   "split": {
@@ -10,57 +10,57 @@
     "train_max_step": 400,
     "test_min_step": 401
   },
-  "train_cap_rows": 500000,
+  "train_cap_rows": 1000000,
   "n_rows": {
     "all": 6362620,
     "train_full": 5787030,
-    "train_used": 500000,
+    "train_used": 1000000,
     "test": 575590
   },
   "metrics": {
-    "pr_auc": 0.8434347868836035,
+    "pr_auc": 0.8799241781467152,
     "threshold_table": [
       {
         "threshold": 0.1,
-        "precision": 0.19582086243210287,
-        "recall": 0.9456638115631691
+        "precision": 0.44136090727151434,
+        "recall": 0.8854389721627409
       },
       {
         "threshold": 0.3,
-        "precision": 0.2923388874195539,
-        "recall": 0.8875802997858673
+        "precision": 0.8590682683855845,
+        "recall": 0.784796573875803
       },
       {
         "threshold": 0.5,
-        "precision": 0.42033898305084744,
-        "recall": 0.8297644539614561
+        "precision": 0.9793672627235214,
+        "recall": 0.7623126338329764
       },
       {
         "threshold": 0.7,
-        "precision": 0.5601206181681115,
-        "recall": 0.7955032119914347
+        "precision": 0.991462113127001,
+        "recall": 0.7459850107066381
       },
       {
         "threshold": 0.9,
-        "precision": 0.8295158016816468,
-        "recall": 0.7657922912205567
+        "precision": 0.9978165938864629,
+        "recall": 0.7339400428265525
       },
       {
         "threshold": 0.95,
-        "precision": 0.9474916387959866,
-        "recall": 0.7582976445396146
+        "precision": 0.9984945427173504,
+        "recall": 0.7101177730192719
       }
     ],
     "confusion_matrix": {
       "threshold": 0.5,
-      "tn": 567579,
-      "fp": 4275,
-      "fn": 636,
-      "tp": 3100
+      "tn": 571794,
+      "fp": 60,
+      "fn": 888,
+      "tp": 2848
     }
   },
   "engineering": {
-    "runtime_sec": 13.615383500000462,
-    "model_size_bytes": 331072
+    "runtime_sec": 39.25227480000467,
+    "model_size_bytes": 829880
   }
 }

@@ -1,4 +1,3 @@
-# ml/training/train.py
 from __future__ import annotations
 
 import argparse
@@ -118,7 +117,6 @@ def make_model(model_type: str, params: Dict):
         return LogisticRegression(**params)
 
     if mt in {"hgb", "histgradientboosting", "histgradientboostingclassifier"}:
-        # Filter params to allowed args for HistGradientBoostingClassifier
         allowed = {
             "loss", "learning_rate", "max_iter", "max_depth", "max_leaf_nodes",
             "min_samples_leaf", "l2_regularization", "max_bins", "categorical_features",
@@ -190,6 +188,11 @@ def write_report_md(
     md.append(f"- Model name: {cfg.model_name}\n")
     md.append(f"- Params: `{json.dumps(cfg.model_params, ensure_ascii=False)}`\n\n")
 
+    md.append("- **Hyperparameters**:\n")
+    for param, value in cfg.model_params.items():
+        md.append(f"  - `{param}`: {value}\n")
+    md.append("\n")
+
     md.append("## Metrics\n")
     md.append(f"- **PR-AUC (Average Precision)**: **{pr_auc:.6f}**\n\n")
 
@@ -246,7 +249,6 @@ def main() -> None:
     # Cap training rows (after split)
     n_train_full = len(train_df)
     if cfg.train_cap_rows > 0 and len(train_df) > cfg.train_cap_rows:
-    # Ambil data paling baru (step tertinggi) di masa training
         train_df = train_df.sort_values(cfg.step_col).tail(cfg.train_cap_rows)
     n_train_used = len(train_df)
 
@@ -260,15 +262,12 @@ def main() -> None:
 
     # Fit model
     model = make_model(cfg.model_type, cfg.model_params)
-    # Hitung bobot otomatis (balanced)
-    weights = compute_sample_weight('balanced', y_train)
+    weights = np.where(y_train == 1, 20, 1)
 
     t0 = time.perf_counter()
-    # Fit dengan sample_weight
     model.fit(X_train, y_train, sample_weight=weights)
     runtime_sec = time.perf_counter() - t0
 
-    # Predict score
     if hasattr(model, "predict_proba"):
         y_score = model.predict_proba(X_test)[:, 1]
     else:

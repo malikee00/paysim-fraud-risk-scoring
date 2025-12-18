@@ -1,0 +1,33 @@
+data:
+  features_path: "data/processed_local/features_v2_full_sakti.parquet"
+
+schema:
+  step_col: "step"
+  target_col: "isfraud" # pastikan case-sensitive-nya sama dengan output build_features tadi
+
+split:
+  method: "temporal"
+  train_max_step: 400
+  test_min_step: 401
+
+training:
+  train_cap_rows: 1000000
+  drop_cols: ["step"]
+
+model:
+  name: "hgb_v2_final_polish"
+  type: "hgb"
+  params:
+    max_iter: 1000        # Naik dari 400 (Belajar lebih lama)
+    learning_rate: 0.02   # Turun dari 0.05 (Lebih teliti/halus)
+    max_depth: 15         # Naik dari 12 (Menangkap interaksi fitur yang lebih kompleks)
+    min_samples_leaf: 30  # Sedikit lebih sensitif
+    l2_regularization: 0.1 # Menjaga agar tidak overfitting meski belajar lama
+    random_state: 42
+
+thresholds:
+  report: [0.1, 0.3, 0.5, 0.7, 0.9, 0.95]
+
+artifacts:
+  model_dir: "ml/models/v2_improved"
+  report_md: "ml/reports/train_summary_v2_improved.md"
