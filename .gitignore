@@ -14,6 +14,10 @@ data/processed/*
 !data/processed/features_v1.parquet
 !data/processed/feature_summary.json
 
+# Inference outputs
+ml/inference/predictions.csv
+ml/inference/*.csv
+
 # =========================
 # Local-only processed data (FULL)
 # =========================
