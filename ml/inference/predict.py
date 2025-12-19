@@ -23,6 +23,7 @@ class LoadedArtifacts:
     metadata: Dict
     model_version: str
     model_dir: str
+    thresholds_version: str
 
 
 # =========================
@@ -35,13 +36,14 @@ def load_yaml(path: str) -> Dict:
     with p.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
-
 def load_json(path: str) -> Dict:
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"JSON not found: {p}")
     return json.loads(p.read_text(encoding="utf-8"))
 
+def get_thresholds_version(thresholds_path: str) -> str:
+    return Path(thresholds_path).stem
 
 # =========================
 # Registry parsing
@@ -100,6 +102,7 @@ def load_artifacts_from_registry(registry_md: str = "ml/models/registry.md") -> 
         metadata=metadata,
         model_version=cur["current_version"],
         model_dir=str(model_dir),
+        thresholds_version=get_thresholds_version(str(thresholds_path)), 
     )
 
 
@@ -173,7 +176,12 @@ def predict_single(payload: dict, artifacts: Optional[LoadedArtifacts] = None) -
 
     bucket, action = score_to_bucket_action(risk_score, t1, t2)
 
-    return {"risk_score": risk_score, "bucket": bucket, "action": action}
+    return {
+        "risk_score": risk_score, 
+        "bucket": bucket, 
+        "action": action,
+        "thresholds_version": artifacts.thresholds_version 
+    }
 
 
 def predict_df(

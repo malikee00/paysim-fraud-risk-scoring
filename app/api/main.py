@@ -12,6 +12,9 @@ from app.api.schemas import (
 from app.api.deps import get_artifacts
 from ml.inference.predict import predict_single
 
+def log_event(payload: dict):
+    print(payload)
+
 app = FastAPI(
     title="PaySim Fraud Risk API",
     version="1.0.0",
@@ -52,23 +55,25 @@ def predict(req: PredictRequest, request: Request) -> PredictResponse:
         latency_ms = (time.perf_counter() - start_time) * 1000
 
         # ── STEP 5: logging (minimal, production-mindset)
-        print(
-            {
-                "event": "predict",
-                "status": "success",
-                "latency_ms": round(latency_ms, 2),
-                "model_version": artifacts.model_version,
-                "bucket": result["bucket"],
-                "action": result["action"],
-            }
-        )
+        log_event(
+        {
+            "event": "predict",
+            "status": "success",
+            "latency_ms": round(latency_ms, 2),
+            "model_version": artifacts.model_version,
+            "thresholds_version": "thresholds",
+            "bucket": result["bucket"],
+            "action": result["action"],
+        }
+    )
 
         return PredictResponse(
-            risk_score=result["risk_score"],
-            risk_bucket=result["bucket"],
-            recommended_action=result["action"],
-            model_version=artifacts.model_version,
-        )
+        risk_score=result["risk_score"],
+        risk_bucket=result["bucket"],
+        recommended_action=result["action"],
+        model_version=artifacts.model_version,
+        thresholds_version="thresholds", 
+    )
 
     except HTTPException:
         raise
