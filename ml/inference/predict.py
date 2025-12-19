@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+import re
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,84 @@ def decide(score_value: float, t1: float, t2: float) -> str:
         return "REVIEW"
     return "APPROVE"
 
+def parse_registry_current(registry_md: str = "ml/models/registry.md") -> Dict[str, str]:
+    text = Path(registry_md).read_text(encoding="utf-8")
+
+    def grab(key: str) -> str:
+        m = re.search(
+            rf"\*\*{re.escape(key)}\*\*:\s*(?:`([^`]+)`|\*\*([^*]+)\*\*)",
+            text
+        )
+        if not m:
+            raise ValueError(f"Cannot find `{key}` in {registry_md}")
+        return (m.group(1) or m.group(2)).strip()
+
+    return {
+        "current_version": grab("current_version"),
+        "current_model_dir": grab("current_model_dir"),
+        "thresholds_config": grab("thresholds_config"),
+    }
+
+def load_artifacts_from_registry(registry_md: str = "ml/models/registry.md") -> LoadedArtifacts:
+    cur = parse_registry_current(registry_md)
+
+    model_dir = cur["current_model_dir"]
+    thresholds_path = cur["thresholds_config"]
+
+    model_path = Path(model_dir) / "model.pkl"
+    metadata_path = Path(model_dir) / "metadata.json"
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+    if not Path(thresholds_path).exists():
+        raise FileNotFoundError(f"Thresholds file not found: {thresholds_path}")
+
+    model = joblib.load(model_path)
+    thresholds = load_yaml(thresholds_path)
+    metadata = load_json(metadata_path) if metadata_path.exists() else {}
+
+    return LoadedArtifacts(
+        model=model,
+        thresholds=thresholds,
+        metadata=metadata,
+        model_version=cur["current_version"],
+        model_dir=model_dir,
+    )
+
+def score_to_bucket_action(score: float, t1: float, t2: float):
+    if score < t1:
+        return "low", "approve"
+    elif score < t2:
+        return "medium", "review"
+    else:
+        return "high", "block"
+
+def predict_single(payload: dict, artifacts: LoadedArtifacts | None = None) -> dict:
+    artifacts = artifacts or load_artifacts_from_registry()
+
+    X = pd.DataFrame([payload])
+
+    # drop non-feature
+    drop_cols = artifacts.metadata.get("drop_cols", [])
+    if "isfraud" in X.columns:
+        drop_cols = list(drop_cols) + ["isfraud"]
+
+    X = X.drop(columns=[c for c in drop_cols if c in X.columns], errors="ignore")
+
+    # align features
+    X = align_features_with_model(artifacts.model, X)
+
+    risk_score = float(artifacts.model.predict_proba(X)[0, 1])
+    t1 = float(artifacts.thresholds["t1"])
+    t2 = float(artifacts.thresholds["t2"])
+
+    bucket, action = score_to_bucket_action(risk_score, t1, t2)
+
+    return {
+        "risk_score": risk_score,
+        "bucket": bucket,
+        "action": action,
+    }
 
 def predict_df(
     X: pd.DataFrame,
@@ -137,7 +216,7 @@ def main() -> None:
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
-    artifacts = load_current_artifacts(args.current)
+    artifacts = (args.current)
 
     in_path = Path(args.input)
     if not in_path.exists():

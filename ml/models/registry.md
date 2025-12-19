@@ -1,10 +1,13 @@
 # Model Registry
 
+
 ## Current
 - **current_version**: **v2**
 - **current_model_dir**: `ml/models/v2_improved`
 - **thresholds_config**: `ml/reports/thresholds.yaml`
 - **eval_report**: `ml/reports/eval_report.md`
+- **model_file**: `model.pkl`
+- **metadata_file**: `metadata.json`
 
 ---
 
