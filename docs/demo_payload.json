@@ -1,0 +1,20 @@
+{
+  "log_amount": 0,
+  "error_orig": 0,
+  "error_dest": 0,
+  "org_delta_mismatch": 0,
+  "dest_delta_mismatch": 0,
+  "is_merchant_dest": 0,
+  "org_balance_decreased": 0,
+  "dest_balance_increased": 0,
+  "dest_uniq_origs_hist": 0,
+  "type_CASH_IN": 0,
+  "type_CASH_OUT": 0,
+  "type_DEBIT": 0,
+  "type_PAYMENT": 0,
+  "type_TRANSFER": 0,
+  "dest_txn_count_w10": 0,
+  "ratio_amt_to_dest_mean_w10": 0,
+  "dest_txn_count_w50": 0,
+  "ratio_amt_to_dest_mean_w50": 0
+}
