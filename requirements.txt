@@ -1,2 +1,8 @@
-pyarrow
-pytest
+fastapi
+uvicorn
+pydantic
+joblib
+pandas
+numpy
+pyyaml
+scikit-learn

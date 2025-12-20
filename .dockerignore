@@ -1,0 +1,38 @@
+# =========================
+# Python cache & env
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# =========================
+# DATA BESAR (WAJIB)
+# (keep code, ignore raw/processed)
+# =========================
+data/raw/
+data/processed/
+data/processed_local/
+data/**/*.parquet
+data/**/*.csv
+
+# =========================
+# MLflow runs (besar)
+# =========================
+mlruns/
+
+# =========================
+# Generated reports/exports (optional ignore)
+# =========================
+ml/reports/*.png
+ml/reports/*.csv
+analytics/exports/
+
+# =========================
+# Git & editor
+# =========================
+.git/
+.vscode/
+.DS_Store

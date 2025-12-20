@@ -56,16 +56,16 @@ def predict(req: PredictRequest, request: Request) -> PredictResponse:
 
         # ── STEP 5: logging (minimal, production-mindset)
         log_event(
-        {
-            "event": "predict",
-            "status": "success",
-            "latency_ms": round(latency_ms, 2),
-            "model_version": artifacts.model_version,
-            "thresholds_version": "thresholds",
-            "bucket": result["bucket"],
-            "action": result["action"],
-        }
-    )
+            {
+                "event": "predict",
+                "status": "success",
+                "latency_ms": round(latency_ms, 2),
+                "model_version": artifacts.model_version,
+                "thresholds_version": "thresholds",
+                "bucket": result["bucket"],
+                "action": result["action"],
+            }
+        )
 
         return PredictResponse(
         risk_score=result["risk_score"],
@@ -79,13 +79,14 @@ def predict(req: PredictRequest, request: Request) -> PredictResponse:
         raise
     except Exception as e:
         latency_ms = (time.perf_counter() - start_time) * 1000
-        print(
+        log_event(
             {
                 "event": "predict",
                 "status": "error",
                 "latency_ms": round(latency_ms, 2),
                 "model_version": artifacts.model_version,
-                "error": str(e),
+                "error_type": type(e).__name__,
+                "error_message": str(e),
             }
         )
         raise HTTPException(status_code=500, detail="Internal server error")
