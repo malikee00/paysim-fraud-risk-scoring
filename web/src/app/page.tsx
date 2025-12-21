@@ -69,6 +69,11 @@ function TabButton({
   );
 }
 
+function Icon({ children }: { children: React.ReactNode }) {
+  return <span className="text-slate-700">{children}</span>;
+}
+
+
 function BentoCard({
   title,
   icon,
@@ -88,19 +93,17 @@ function BentoCard({
       ].join(" ")}
     >
       <div className="flex items-center gap-2 border-b border-gray-100 px-6 py-4">
-        {icon ? <span className="text-gray-700">{icon}</span> : null}
-        <h2 className="text-sm font-semibold tracking-tight text-gray-900">{title}</h2>
+        {icon ? icon : null}
+        <h2 className="text-sm font-semibold tracking-tight text-gray-900">
+          {title}
+        </h2>
       </div>
       <div className="px-6 py-5">{children}</div>
     </section>
   );
 }
 
-function Pill({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function Pill({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-xs text-gray-800">
       {children}
@@ -133,13 +136,20 @@ export default function Home() {
   // ---- Batch state ----
   const [batchFile, setBatchFile] = useState<File | null>(null);
   const [batchLoading, setBatchLoading] = useState(false);
-  const [batchResult, setBatchResult] = useState<BatchPredictResponse | null>(null);
+  const [batchResult, setBatchResult] = useState<BatchPredictResponse | null>(
+    null
+  );
   const [batchError, setBatchError] = useState<string | null>(null);
 
   const isInvalid = useMemo(() => {
     if (step < 0) return true;
     if (amount < 0) return true;
-    if (oldbalanceOrg < 0 || newbalanceOrig < 0 || oldbalanceDest < 0 || newbalanceDest < 0)
+    if (
+      oldbalanceOrg < 0 ||
+      newbalanceOrig < 0 ||
+      oldbalanceDest < 0 ||
+      newbalanceDest < 0
+    )
       return true;
     return false;
   }, [step, amount, oldbalanceOrg, newbalanceOrig, oldbalanceDest, newbalanceDest]);
@@ -254,17 +264,21 @@ export default function Home() {
       {/* Background base */}
       <div className="fixed inset-0 -z-20 bg-gray-50" />
 
-      {/* Mesh gradient SVG */}
+      {/* Apple-style soft background */}
+      <div className="fixed inset-0 -z-20 bg-[#f5f5f7]" />
+
       <div
-        className="fixed inset-0 -z-20 opacity-90"
+        className="fixed inset-0 -z-20"
         style={{
-          backgroundImage: "url(/assets/mesh.svg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          background:
+            "radial-gradient(900px 600px at 20% 10%, rgba(0,122,255,0.10), transparent 60%)," +
+            "radial-gradient(800px 500px at 80% 20%, rgba(175,82,222,0.10), transparent 55%)," +
+            "radial-gradient(1000px 600px at 50% 90%, rgba(52,199,89,0.08), transparent 60%)",
         }}
       />
 
-      {/* Noise overlay via CSS utility */}
+
+      {/* Noise overlay */}
       <div className="fixed inset-0 -z-10 bg-noise opacity-[0.10] mix-blend-multiply pointer-events-none" />
 
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -275,7 +289,9 @@ export default function Home() {
               <p className="text-xs font-semibold tracking-wide text-gray-700">
                 ML SYSTEM DEMO • REAL-TIME RISK SCORING
               </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">PaySim Fraud Risk</h1>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">
+                PaySim Fraud Risk
+              </h1>
               <p className="mt-2 text-sm text-gray-700">
                 Real-time scoring and upload sample data.
               </p>
@@ -283,15 +299,14 @@ export default function Home() {
                 API Base: <span className="font-mono">{API_BASE}</span>
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill>HGB v2</Pill>
-                <Pill>FastAPI /predict</Pill>
-                <Pill>Risk, Bucket, and Action</Pill>
-              </div>
+              {/* ✅ REVISI #1: HAPUS pills/chips (HGB v2, FastAPI /predict, dll) */}
             </div>
 
             <div className="flex gap-2">
-              <TabButton active={tab === "description"} onClick={() => setTab("description")}>
+              <TabButton
+                active={tab === "description"}
+                onClick={() => setTab("description")}
+              >
                 Description
               </TabButton>
               <TabButton active={tab === "execute"} onClick={() => setTab("execute")}>
@@ -323,7 +338,8 @@ export default function Home() {
                       Real-time API
                     </div>
                     <p className="mt-2 text-sm text-gray-700">
-                      Single transaction scoring via <span className="font-mono">/predict</span>.
+                      Single transaction scoring via{" "}
+                      <span className="font-mono">/predict</span>.
                     </p>
                   </div>
 
@@ -554,7 +570,8 @@ export default function Home() {
                       <div className="flex items-center justify-between text-xs text-gray-600">
                         <span>risk ≈ {scorePct}</span>
                         <span className="font-mono">
-                          model {result.model_version ?? "-"} • thr {result.thresholds_version ?? "-"}
+                          model {result.model_version ?? "-"} • thr{" "}
+                          {result.thresholds_version ?? "-"}
                         </span>
                       </div>
                       <div className="mt-3 h-2.5 w-full rounded-full bg-gray-100">
@@ -589,12 +606,35 @@ export default function Home() {
                     Download Demo CSV
                   </a>
 
+                  {/* ✅ REVISI #2: file input dibuat "kotak" yang clickable */}
                   <input
+                    id="batchFile"
                     type="file"
                     accept=".csv"
                     onChange={(e) => setBatchFile(e.target.files?.[0] ?? null)}
-                    className="block text-sm"
+                    className="hidden"
                   />
+
+                  <label
+                    htmlFor="batchFile"
+                    className={[
+                      "flex items-center justify-between gap-3",
+                      "w-full sm:w-[420px]",
+                      "rounded-2xl border border-gray-200 bg-white/80 px-4 py-3",
+                      "text-sm cursor-pointer hover:bg-white transition",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center gap-2 text-gray-800">
+                      <FileUp className="h-4 w-4" />
+                      <span className="font-medium">
+                        {batchFile ? "File selected" : "Choose CSV file"}
+                      </span>
+                    </div>
+
+                    <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                      {batchFile ? batchFile.name : "No file chosen"}
+                    </span>
+                  </label>
 
                   <button
                     onClick={handleBatchUpload}
@@ -615,7 +655,8 @@ export default function Home() {
                 {batchResult && (
                   <div className="mt-5 rounded-2xl border border-gray-200 bg-white/75 p-5">
                     <div className="text-sm text-gray-700">
-                      rows: <b>{batchResult.n_rows}</b> • success: <b>{batchResult.n_success}</b> • failed:{" "}
+                      rows: <b>{batchResult.n_rows}</b> • success:{" "}
+                      <b>{batchResult.n_success}</b> • failed:{" "}
                       <b>{batchResult.n_failed}</b>
                     </div>
 
@@ -635,11 +676,17 @@ export default function Home() {
                           {batchResult.results.slice(0, 200).map((r, i) => (
                             <tr key={i} className="border-b border-gray-100">
                               <td className="p-2">{String(r.row_index ?? i)}</td>
-                              <td className="p-2 font-mono text-xs">{String(r.transaction_id ?? "-")}</td>
-                              <td className="p-2">{String(r.risk_bucket ?? "-")}</td>
-                              <td className="p-2">{String(r.recommended_action ?? "-")}</td>
                               <td className="p-2 font-mono text-xs">
-                                {typeof r.risk_score === "number" ? r.risk_score.toFixed(6) : "-"}
+                                {String(r.transaction_id ?? "-")}
+                              </td>
+                              <td className="p-2">{String(r.risk_bucket ?? "-")}</td>
+                              <td className="p-2">
+                                {String(r.recommended_action ?? "-")}
+                              </td>
+                              <td className="p-2 font-mono text-xs">
+                                {typeof r.risk_score === "number"
+                                  ? r.risk_score.toFixed(6)
+                                  : "-"}
                               </td>
                               <td className="p-2">{String(r.status ?? "-")}</td>
                             </tr>
@@ -648,7 +695,9 @@ export default function Home() {
                       </table>
                     </div>
 
-                    <div className="mt-2 text-xs text-gray-500">showing up to 200 rows in UI</div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      showing up to 200 rows in UI
+                    </div>
                   </div>
                 )}
               </BentoCard>
