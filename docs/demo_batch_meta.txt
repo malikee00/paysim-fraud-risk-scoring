@@ -1,0 +1,4 @@
+mode=stratified (fraud_ratio=0.8, fraud_rows=16, nonfraud_rows=4)
+rows=20
+fraud=16
+nonfraud=4
