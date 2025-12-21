@@ -1,0 +1,13 @@
+{
+    "raw": {
+      "step": 100,
+      "type": "TRANSFER",
+      "amount": 5000,
+      "oldbalanceOrg": 10000,
+      "newbalanceOrig": 5000,
+      "oldbalanceDest": 0,
+      "newbalanceDest": 5000
+    },
+    "features": null
+  }
+  
