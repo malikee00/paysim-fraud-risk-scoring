@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import Any, Dict, Literal, Optional, List
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -55,7 +53,7 @@ class PredictResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     model_version: str
-
+    
 class BatchPredictResponse(BaseModel):
     n_rows: int
     n_success: int

@@ -153,20 +153,13 @@ async def predict_batch(
     file: UploadFile = File(...),
     mode: str = "raw",  
 ) -> BatchPredictResponse:
-    """
-    Upload CSV and return predictions for each row.
-    mode=raw: expects raw columns, will featurize each row.
-    mode=features: expects full engineered feature columns.
-    """
     start_time = time.perf_counter()
     artifacts = get_artifacts()
 
-    # 1) validate file type (basic guard)
     filename = (file.filename or "").lower()
     if not filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are supported.")
 
-    # 2) read csv bytes
     try:
         content = await file.read()
         df = pd.read_csv(io.BytesIO(content))
@@ -182,11 +175,11 @@ async def predict_batch(
     n_success = 0
     n_failed = 0
 
-    # 3) per-row inference
     for idx, row in df.iterrows():
-        try:
-            row_dict = row.to_dict()
+        row_dict = row.to_dict()
+        tx_id = row_dict.get("nameOrig") or f"UNKNOWN_{idx}"
 
+        try:
             if mode == "raw":
                 feats = raw_to_features(row_dict, required_features=required_features)
                 out = predict_single(feats, artifacts)
@@ -198,6 +191,7 @@ async def predict_batch(
             results.append(
                 {
                     "row_index": int(idx),
+                    "transaction_id": str(tx_id),
                     "status": "success",
                     "risk_score": out["risk_score"],
                     "risk_bucket": out["bucket"],
@@ -210,6 +204,7 @@ async def predict_batch(
             results.append(
                 {
                     "row_index": int(idx),
+                    "transaction_id": str(tx_id),
                     "status": "failed",
                     "error_type": type(e).__name__,
                     "error_message": str(e),
@@ -237,3 +232,4 @@ async def predict_batch(
         n_failed=int(n_failed),
         results=results,
     )
+
