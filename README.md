@@ -27,6 +27,14 @@ The system supports direct integration via REST API:
 > **Note**: The API supports both **raw transaction input** and **feature-level input**, ensuring consistency between training and inference environments.
 
 ---
+## 🛠️ Tech Stack
+
+- **Machine Learning**: Scikit-Learn, Joblib (Model Serialization)
+- **Backend**: FastAPI (Python), Uvicorn
+- **Frontend**: Next.js (React), Tailwind CSS
+- **Deployment**: Render (API), Vercel (Web App)
+- **Data Handling**: Pandas, NumPy
+---
 
 ## 🏗️ System Architecture
 
