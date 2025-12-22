@@ -109,3 +109,7 @@ Thumbs.db
 # Large files / archives
 *.zip
 archive.zip
+
+# Next.js
+web/.next/
+web/node_modules/
