@@ -1,0 +1,201 @@
+---
+config:
+  theme: mc
+  layout: fixed
+---
+flowchart LR
+ subgraph S1["1. Data Source (PaySim)"]
+        ds1["paySim_full.csv (local-only)\n data/raw/ (ignored by git)"]
+        ds2["sample_raw.csv (commit-safe sample)\n data/raw/sample_raw.csv"]
+        ds3["data/raw/README.md\n(data notes + provenance)"]
+  end
+ subgraph S2["2. Ingest + Validate"]
+        ing1["pipelines/ingest/fetch_data.py\n- fetch/load dataset\n- create sample exports"]
+        ing2["pipelines/ingest/validate_schema.py\n- required columns\n- types & ranges\n- enum check: type"]
+        ing3["pipelines/ingest/schema.yaml (optional)\n- canonical schema contract"]
+        ing4["logs: ingest_validation.log\n(optional)"]
+  end
+ subgraph S3["3. Transform + Quality Tests"]
+        tr1["pipelines/transform/transform.py\n- rename/standardize columns\n- handle missing/invalid\n- derive canonical balances\n- output canonical transactions"]
+        tr2["pipelines/transform/tests/\n- test_row_count.py\n- test_constraints.py\n- test_duplicates.py (optional)"]
+        tr3["data/processed/transactions_clean.parquet (commit-safe)\n(or small sample)"]
+        tr4["data/processed_local/transactions_clean_full.parquet (local-only)"]
+        tr5["ml/reports/data_profile.md\n- row counts\n- missingness\n- class imbalance"]
+  end
+ subgraph V1["V1: Baseline features"]
+        fb1["pipelines/features/build_v1.py\n- log_amount\n- simple balance consistency\n- type one-hot"]
+        f1a["data/processed/features_v1.parquet (commit-safe)\n(or small sample)"]
+        f1b["data/processed_local/features_v1_full.parquet (local-only)"]
+        s1a["data/processed/feature_summary.json (V1)\n(mean/std/min/max)"]
+  end
+ subgraph V2["V2: Improved features (behavior/velocity)"]
+        fb2["pipelines/features/build_v2.py\n- mismatch signals:\n  org_delta_mismatch, dest_delta_mismatch\n- flags:\n  error_orig, error_dest\n  org_balance_decreased, dest_balance_increased\n  is_merchant_dest\n- history features:\n  dest_uniq_origs_hist\n- rolling windows:\n  dest_txn_count_w10, dest_txn_count_w50\n  ratio_amt_to_dest_mean_w10, ratio_amt_to_dest_mean_w50\n- type one-hot:\n  type_*"]
+        f2a["data/processed/features_v2.parquet (commit-safe)\n(or small sample)"]
+        f2b["data/processed_local/features_v2_full_sakti.parquet (local-only)"]
+        s2a["data/processed_local/summary_v2_full_sakti.json\n(V2 training feature summary)"]
+  end
+ subgraph S4["4. Feature Build (V1 / V2)"]
+        fb0["pipelines/features/README.md\n- feature definitions\n- versioning rules"]
+        V1
+        V2
+  end
+ subgraph S5["5. Train + Eval + MLflow"]
+        split1["ml/splitting/temporal_split.py\n- sort by step\n- train/val/test by time\n- avoid leakage"]
+        train1["ml/training/train_v1.py\n- LogisticRegression (class_weight)\n- fit on V1 features\n- save model artifact"]
+        train2["ml/training/train_v2.py\n- LogisticRegression (class_weight)\n- fit on V2 features\n- save model artifact"]
+        mlf["MLflow tracking\n(mlruns/ local)\n- params\n- metrics\n- artifacts"]
+        eval1["ml/evaluation/eval.py\n- PR-AUC primary\n- precision/recall\n- segment checks (type/amount buckets)\n- calibration notes (optional)"]
+        rep1["ml/reports/eval_report.md\n- V1 vs V2 summary\n- tables/plots refs"]
+        rep2["ml/reports/curves_*.png\n(PR curve etc.)"]
+  end
+ subgraph S6["6. Model Registry + Thresholds"]
+        reg1["ml/models/registry.md\n- current model pointer\n- version history (v1, v2)\n- artifact locations"]
+        reg2["ml/models/v1_baseline/\n- model.pkl\n- metadata.json"]
+        reg3["ml/models/v2_improved/\n- model.pkl\n- metadata.json"]
+        thr1["ml/reports/thresholds.yaml\n- T1/T2\n- mapping rules\n- thresholds_version"]
+        map1["Decision policy\nrisk_score -> bucket -> action\nlow/medium/high -> approve/review/block"]
+  end
+ subgraph S7["7. FastAPI + PWA Demo"]
+        api1["app/api/main.py\n- /health\n- /template/raw\n- /template/features\n- /predict\n- /predict_batch"]
+        api2["app/api/schemas.py\n- PredictRequest {raw|features}\n- PredictResponse\n- BatchPredictResponse"]
+        api3["app/api/inference.py\n- load current model from registry.md\n- load thresholds from thresholds.yaml\n- validate payload\n- score + bucket + action"]
+        pwa1["web/ (Next.js PWA)\n- input form\n- call /predict\n- render risk_score, bucket, action\n- error handling"]
+        demo1["docs/demo.gif\n(screenshare of PWA + API response)"]
+        docker1["ops/docker/Dockerfile\n- build image\n- run FastAPI service"]
+        run1["scripts/run_docker.ps1\nscripts/build_docker.ps1\n- build/run container"]
+  end
+ subgraph MON["Monitoring & Reliability"]
+        lat1["scripts/benchmark_latency.py\n- hit /predict N times\n- report p50/p95 latency"]
+        drift0["scripts/generate_recent_samples.py\n- take latest slice of V2 feature table\n- create ml/inference/recent_samples.csv"]
+        drift1["scripts/check_drift.py\n- compare recent feature means\n- vs V2 training summary\n- output drift_report.md"]
+        drift2["ml/reports/drift_report.md\n- OK / POTENTIAL DRIFT per feature"]
+        inf1["ml/inference/predictions.csv\n- score, action, thresholds,\n  model_version, model_dir"]
+        sampleReq["ml/inference/sample_request.json\n- PredictRequest payload for testing\n- uses raw.newbalanceOrig field"]
+  end
+    ds1 --> ing1
+    ing1 --> ing2
+    ing2 --> tr1 & tr2
+    tr1 --> fb1 & tr3 & tr4
+    ds2 --> ing2
+    tr3 --> fb1
+    fb1 --> f1a & s1a
+    tr4 --> fb2
+    fb2 --> f2b & s2a
+    f1a --> split1
+    split1 --> train1 & train2
+    train1 --> eval1 & mlf & reg2
+    f2b --> split1 & drift0
+    train2 --> eval1 & mlf & reg3
+    eval1 --> rep1 & rep2 & thr1
+    reg2 --> reg1
+    reg3 --> reg1
+    thr1 --> map1 & api3
+    reg1 --> api3
+    api2 --> api1
+    api3 --> api1
+    api1 --> pwa1 & lat1 & inf1
+    pwa1 --> demo1
+    docker1 --> api1
+    run1 --> docker1
+    drift0 --> drift1
+    drift1 --> drift2
+    sampleReq --> lat1
+
+     ds1:::source
+     ds1:::source
+     ds2:::source
+     ds2:::source
+     ds3:::source
+     ds3:::source
+     ing1:::pipe
+     ing1:::pipe
+     ing2:::pipe
+     ing2:::pipe
+     ing3:::store
+     ing3:::pipe
+     ing4:::store
+     ing4:::pipe
+     tr1:::pipe
+     tr1:::pipe
+     tr2:::pipe
+     tr2:::pipe
+     tr3:::store
+     tr3:::store
+     tr4:::store
+     tr4:::store
+     tr5:::store
+     tr5:::store
+     fb0:::store
+     fb0:::store
+     fb1:::pipe
+     fb1:::pipe
+     f1a:::store
+     f1a:::store
+     f1b:::store
+     f1b:::store
+     s1a:::store
+     s1a:::store
+     fb2:::pipe
+     fb2:::pipe
+     f2a:::store
+     f2a:::store
+     f2b:::store
+     f2b:::store
+     s2a:::store
+     s2a:::store
+     split1:::ml
+     split1:::ml
+     train1:::ml
+     train1:::ml
+     train2:::ml
+     train2:::ml
+     mlf:::store
+     mlf:::store
+     eval1:::ml
+     eval1:::ml
+     rep1:::store
+     rep1:::store
+     rep2:::store
+     rep2:::store
+     reg1:::reg
+     reg1:::reg
+     reg2:::store
+     reg2:::store
+     reg3:::store
+     reg3:::store
+     thr1:::reg
+     thr1:::reg
+     map1:::reg
+     map1:::reg
+     api1:::serve
+     api1:::serve
+     api2:::serve
+     api2:::serve
+     api3:::serve
+     api3:::serve
+     pwa1:::serve
+     pwa1:::serve
+     demo1:::store
+     demo1:::store
+     docker1:::serve
+     docker1:::serve
+     run1:::serve
+     run1:::serve
+     lat1:::pipe
+     lat1:::pipe
+     drift0:::pipe
+     drift0:::pipe
+     drift1:::pipe
+     drift1:::pipe
+     drift2:::store
+     drift2:::store
+     inf1:::store
+     inf1:::store
+     sampleReq:::store
+     sampleReq:::store
+    classDef source fill:#ffffff,stroke:#111827,stroke-width:2px,color:#111827
+    classDef pipe fill:#ffffff,stroke:#111827,stroke-width:2px,color:#111827
+    classDef ml fill:#ffffff,stroke:#111827,stroke-width:2px,color:#111827
+    classDef reg fill:#ffffff,stroke:#111827,stroke-width:2px,color:#111827
+    classDef serve fill:#ffffff,stroke:#111827,stroke-width:2px,color:#111827
+    classDef store fill:#ffffff,stroke:#374151,stroke-width:1.5px,color:#111827,stroke-dasharray: 4 3
