@@ -7,6 +7,7 @@
 ---
 
 ## 🚀 Live Demo
+![Demo Paysim](docs/demo_paysim.gif)
 
 Experience the fully deployed application:
 
